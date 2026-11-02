@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
 const express = require('express');
 const helmet = require('helmet');
@@ -27,7 +28,17 @@ const sessionSecret = process.env.SESSION_SECRET || 'local-development-secret-ch
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '20kb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+const publicDirectory = path.join(__dirname, 'public');
+if (fs.existsSync(path.join(publicDirectory, 'index.html'))) {
+  app.use(express.static(publicDirectory));
+} else {
+  app.get(['/', '/index.html', '/styles.css', '/game.js'], (req, res, next) => {
+    const fileName = req.path === '/' ? 'index.html' : path.basename(req.path);
+    res.sendFile(path.join(__dirname, fileName), (error) => {
+      if (error) next(error);
+    });
+  });
+}
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
