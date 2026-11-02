@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07110c">
+    <meta name="description" content="Hold the line at the edge of the Verdant Reach. A cosmic defense game by Project Defenders.">
+    <title>Project Defenders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Project Defenders home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>PROJECT<span class="brand-light">/</span>DEFENDERS</span>
+      </a>
+      <div class="topbar-right">
+        <div class="signal"><span class="signal-dot"></span> SECTOR 07 / LIVE</div>
+        <button class="account-button" id="accountButton" type="button">SIGN IN <span>↗</span></button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="game-column" aria-label="Game">
+        <div class="mission-heading">
+          <div>
+            <p class="eyebrow"><span class="eyebrow-line"></span> FRONTIER DEFENSE INITIATIVE</p>
+            <h1>PROJECT <span>DEFENDERS</span></h1>
+          </div>
+          <div class="location"><span>LOCATION</span><strong>KEPLER-186F</strong><small>OUTER COLONY / 03:17 UTC</small></div>
+        </div>
+
+        <div class="game-frame" id="gameFrame">
+          <canvas id="gameCanvas" aria-label="A top-down defense game. Move with WASD, aim with your mouse, click to fire, and press Space to pulse a shield."></canvas>
+          <div class="scanline" aria-hidden="true"></div>
+          <div class="game-hud" id="gameHud" hidden>
+            <div class="hud-left"><span class="hud-label">INTEGRITY</span><div class="health-track"><i id="healthBar"></i></div><strong id="healthText">100%</strong></div>
+            <div class="hud-center"><span class="hud-label">THREAT</span><strong id="waveText">01</strong><span class="hud-divider">/</span><span id="enemyText">00 HOSTILES</span></div>
+            <div class="hud-right"><span class="hud-label">FIELD SCORE</span><strong id="scoreText">000000</strong></div>
+          </div>
+          <div class="ring-switch" id="ringSwitch" hidden aria-label="Select a spectrum ring">
+            <button id="previousRing" type="button" aria-label="Previous ring">‹</button>
+            <span><small>ACTIVE CONSTRUCT</small><strong id="ringLabel">VERDANT / LANCE</strong></span>
+            <button id="nextRing" type="button" aria-label="Next ring">›</button>
+            <button class="pulse-button" id="pulseButton" type="button" aria-label="Activate shield pulse">PULSE</button>
+          </div>
+          <div class="game-overlay" id="gameOverlay">
+            <div class="overlay-orbit" aria-hidden="true"><span></span><i></i></div>
+            <p class="overlay-kicker" id="overlayKicker">DISTRESS SIGNAL // PRIORITY ONE</p>
+            <h2 id="overlayTitle">THE FRONTIER<br><em>NEEDS YOU.</em></h2>
+            <p class="overlay-copy" id="overlayCopy">Riftborn are breaching the colony shield.<br>Hold the line. Bring everyone home.</p>
+            <button class="launch-button" id="launchButton" type="button"><span class="launch-icon">▶</span><span id="launchText">DEPLOY TO FRONTIER</span><b>↗</b></button>
+            <div class="control-hint"><span>W</span><span class="key-column"><i>A</i><i>S</i><i>D</i></span><span class="hint-copy">MOVE</span><span class="hint-separator"></span><span class="mouse-icon">⌖</span><span class="hint-copy">AIM + FIRE</span><span class="hint-separator"></span><span class="space-key">Q / E</span><span class="hint-copy">RINGS</span><span class="hint-separator"></span><span class="space-key">SPACE</span><span class="hint-copy">PULSE</span></div>
+          </div>
+          <div class="game-message" id="gameMessage" aria-live="polite"></div>
+          <div class="corner-tag"><span class="corner-dot"></span> PD-07 / DEFENSE GRID</div>
+        </div>
+
+        <div class="game-caption">
+          <span><i class="caption-bar"></i> FIELD OPERATIONS <b>01</b></span>
+          <span class="caption-status"><i></i> ALL SYSTEMS NOMINAL</span>
+          <span class="caption-coords">34°12' N&nbsp; / &nbsp;118°19' W</span>
+        </div>
+      </section>
+
+      <aside class="intel-column" aria-label="Mission intelligence">
+        <div class="pilot-panel">
+          <div class="panel-top"><span>FIELD AGENT</span><span class="panel-index">ID / 07-0<span id="agentId">0</span></span></div>
+          <div class="pilot-identity">
+            <div class="pilot-emblem" aria-hidden="true"><span>✳</span><i></i></div>
+            <div><h2 id="pilotName">UNASSIGNED</h2><p id="pilotRank">CREATE A CALLSIGN TO ENLIST</p></div>
+          </div>
+          <div class="stats-row">
+            <div><span>BEST SCORE</span><strong id="bestScore">------</strong></div>
+            <div><span>BEST WAVE</span><strong id="bestWave">--</strong></div>
+            <div><span>DEPLOYMENTS</span><strong id="deployments">00</strong></div>
+          </div>
+          <div class="pilot-footer"><span class="rank-mark">✦</span><span>YOUR RECORD FOLLOWS YOU.</span><button id="pilotAction" type="button">ENLIST ↗</button></div>
+        </div>
+
+        <div class="intel-section">
+          <div class="section-heading"><h2>THREAT INTEL</h2><span>LIVE FEED <i></i></span></div>
+          <div class="threat-card">
+            <div class="threat-visual"><div class="radar-ring ring-one"></div><div class="radar-ring ring-two"></div><div class="radar-sweep"></div><div class="radar-center"></div><div class="radar-blip blip-one"></div><div class="radar-blip blip-two"></div><div class="radar-blip blip-three"></div><span class="radar-crosshair">+</span></div>
+            <div class="threat-copy"><div class="threat-name"><span>RIFTBORN</span><i>HOSTILE</i></div><p>Unstable entities emerging from a collapsing rift. They move fast. Don’t let them reach the beacon.</p><div class="threat-meta"><span>THREAT LEVEL <b>RISING</b></span><span>CONTACTS <b id="contactCount">--</b></span></div></div>
+          </div>
+        </div>
+
+        <div class="leaderboard-section">
+          <div class="section-heading"><h2>DEFENDER ROSTER</h2><button id="refreshLeaderboard" type="button" title="Refresh roster" aria-label="Refresh roster">↻</button></div>
+          <div class="leaderboard" id="leaderboard"><div class="roster-empty"><span>✳</span> ROSTER AWAITING FIRST DEPLOYMENT</div></div>
+        </div>
+
+        <div class="intel-footer"><span>DEFEND THE LIGHT.</span><span>PD / EST. 2089</span></div>
+      </aside>
+    </main>
+
+    <footer class="page-footer"><span>PROJECT DEFENDERS <b>© 2089 FRONTIER DEFENSE INITIATIVE</b></span><span>BUILT FOR THE ONES WHO STAY.</span></footer>
+
+    <dialog class="auth-dialog" id="authDialog">
+      <form class="auth-form" id="authForm">
+        <button class="dialog-close" id="closeDialog" type="button" aria-label="Close">×</button>
+        <div class="dialog-mark">✳</div>
+        <p class="eyebrow"><span class="eyebrow-line"></span> FRONTIER DEFENSE INITIATIVE</p>
+        <h2 id="authTitle">JOIN THE<br><em>DEFENDERS.</em></h2>
+        <p class="dialog-copy" id="authCopy">Create your callsign. Your field record will follow you from here on out.</p>
+        <label for="username">CALLSIGN</label>
+        <input id="username" name="username" autocomplete="username" minlength="3" maxlength="18" pattern="[A-Za-z0-9_]+" required placeholder="e.g. STARWARD_7">
+        <label for="password">PASSWORD</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="72" required placeholder="8 characters minimum">
+        <p class="auth-error" id="authError" aria-live="polite"></p>
+        <button class="launch-button auth-submit" id="authSubmit" type="submit"><span id="authSubmitText">CREATE ACCOUNT</span><b>↗</b></button>
+        <button class="auth-switch" id="authSwitch" type="button">ALREADY ENLISTED? <span>SIGN IN</span></button>
+      </form>
+    </dialog>
+
+    <script src="/game.js" defer></script>
+  </body>
+</html>
