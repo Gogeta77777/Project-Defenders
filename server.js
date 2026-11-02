@@ -29,16 +29,14 @@ app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '20kb' }));
 const publicDirectory = path.join(__dirname, 'public');
-if (fs.existsSync(path.join(publicDirectory, 'index.html'))) {
-  app.use(express.static(publicDirectory));
-} else {
-  app.get(['/', '/index.html', '/styles.css', '/game.js'], (req, res, next) => {
-    const fileName = req.path === '/' ? 'index.html' : path.basename(req.path);
-    res.sendFile(path.join(__dirname, fileName), (error) => {
-      if (error) next(error);
-    });
+app.get(['/', '/index.html', '/styles.css', '/game.js'], (req, res, next) => {
+  const fileName = req.path === '/' ? 'index.html' : path.basename(req.path);
+  const filePath = [path.join(__dirname, fileName), path.join(publicDirectory, fileName)].find(fs.existsSync);
+  if (!filePath) return next();
+  res.sendFile(filePath, (error) => {
+    if (error) next(error);
   });
-}
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
