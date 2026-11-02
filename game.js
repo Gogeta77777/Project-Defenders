@@ -7,6 +7,12 @@
   const authDialog = document.getElementById('authDialog');
   const authForm = document.getElementById('authForm');
   const keys = new Set();
+  const lime = '#a4ff4f';
+  const avatars = [
+    { id: 'rook', name: 'ROOK', role: 'ADAPTIVE', color: '#a4ff4f', health: 100, speed: 205, fireRate: 1, pulseRadius: 82, pulseDuration: .55 },
+    { id: 'bastion', name: 'BASTION', role: 'HEAVY', color: '#65d8ff', health: 135, speed: 170, fireRate: 1.16, pulseRadius: 108, pulseDuration: .8 },
+    { id: 'wisp', name: 'WISP', role: 'AGILE', color: '#ffc45c', health: 84, speed: 258, fireRate: .78, pulseRadius: 72, pulseDuration: .48 },
+  ];
   const rings = [
     { name: 'VERDANT', construct: 'LANCE', color: '#a4ff4f', rate: 180, damage: 1, speed: 620, style: 'lance' },
     { name: 'AZURE', construct: 'WARD', color: '#66d9ff', rate: 250, damage: 1, speed: 570, style: 'ward', pierce: 1 },
@@ -29,6 +35,7 @@
   let enemies = [];
   let shots = [];
   let particles = [];
+  let constructEffects = [];
   let pickups = [];
   let score = 0;
   let wave = 1;
@@ -41,8 +48,49 @@
   let obstacles = [];
   let stars = [];
   let authMode = 'register';
+  let avatarIndex = Math.max(0, avatars.findIndex((avatar) => avatar.id === localStorage.getItem('pd_avatar')));
 
   const $ = (id) => document.getElementById(id);
+
+  function activeAvatar() {
+    return avatars[avatarIndex];
+  }
+
+  function updateAvatarSelection() {
+    const avatar = activeAvatar();
+    document.querySelectorAll('.avatar-choice').forEach((button) => {
+      const selected = button.dataset.avatar === avatar.id;
+      button.classList.toggle('is-active', selected);
+      button.setAttribute('aria-pressed', String(selected));
+      button.style.setProperty('--avatar-accent', avatar.color);
+    });
+    const emblem = document.querySelector('.pilot-emblem');
+    emblem.style.color = avatar.color;
+    emblem.style.borderColor = `${avatar.color}88`;
+    if (player) {
+      const healthRatio = player.health / player.maxHealth;
+      player.maxHealth = avatar.health;
+      player.health = Math.min(avatar.health, healthRatio * avatar.health);
+      player.speed = avatar.speed;
+      player.fireRate = avatar.fireRate;
+      player.pulseRadius = avatar.pulseRadius;
+      player.pulseDuration = avatar.pulseDuration;
+      updateHud();
+    }
+    localStorage.setItem('pd_avatar', avatar.id);
+    if (state === 'playing') setMessage(`${avatar.name} FRAME // ${avatar.role} LOADOUT`, 1000);
+    draw();
+  }
+
+  document.querySelectorAll('.avatar-choice').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextIndex = avatars.findIndex((avatar) => avatar.id === button.dataset.avatar);
+      if (nextIndex >= 0 && nextIndex !== avatarIndex) {
+        avatarIndex = nextIndex;
+        updateAvatarSelection();
+      }
+    });
+  });
 
   function resize() {
     const rect = canvas.getBoundingClientRect();
@@ -151,28 +199,44 @@
 
   function drawPlayer(time) {
     if (!player) return;
+    const avatar = activeAvatar();
     const angle = Math.atan2(aim.y - player.y, aim.x - player.x);
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(angle);
     if (player.shield > 0) {
-      ctx.strokeStyle = `rgba(164,255,79,${.35 + player.shield * .3})`;
+      ctx.strokeStyle = avatar.color;
       ctx.lineWidth = 2;
-      ctx.shadowColor = rings[ringIndex].color;
-      ctx.shadowBlur = 18;
-      ctx.beginPath(); ctx.arc(0, 0, 19 + (1 - player.shield) * 8, -Math.PI * .72, Math.PI * .72); ctx.stroke();
+      ctx.globalAlpha = .45 + player.shield * .45;
+      ctx.shadowColor = avatar.color; ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.arc(0, 0, 21 + (1 - player.shield) * 9, -Math.PI * .72, Math.PI * .72); ctx.stroke();
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = 'rgba(164,255,79,.12)';
-    ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#dcffb8';
-    ctx.shadowColor = rings[ringIndex].color; ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.moveTo(14, 0); ctx.lineTo(-8, -8); ctx.lineTo(-5, 0); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = `${avatar.color}24`;
+    ctx.beginPath(); ctx.arc(0, 0, 16, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#eaffd3';
+    ctx.strokeStyle = avatar.color;
+    ctx.shadowColor = avatar.color; ctx.shadowBlur = 14; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (avatar.id === 'bastion') {
+      ctx.moveTo(13, 0); ctx.lineTo(7, -10); ctx.lineTo(-6, -10); ctx.lineTo(-12, -6);
+      ctx.lineTo(-12, 6); ctx.lineTo(-6, 10); ctx.lineTo(7, 10); ctx.closePath();
+    } else if (avatar.id === 'wisp') {
+      ctx.moveTo(16, 0); ctx.lineTo(-3, -5); ctx.lineTo(-12, -11); ctx.lineTo(-8, 0);
+      ctx.lineTo(-12, 11); ctx.lineTo(-3, 5); ctx.closePath();
+    } else {
+      ctx.moveTo(15, 0); ctx.lineTo(-7, -9); ctx.lineTo(-4, 0); ctx.lineTo(-7, 9); ctx.closePath();
+    }
+    ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0;
-    ctx.fillStyle = rings[ringIndex].color; ctx.fillRect(1, -2, 6, 4);
+    ctx.fillStyle = rings[ringIndex].color;
+    ctx.beginPath(); ctx.arc(1, 0, avatar.id === 'bastion' ? 3 : 2.2, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    ctx.fillStyle = 'rgba(190,255,157,.75)';
-    ctx.beginPath(); ctx.arc(player.x, player.y, 1.5 + Math.sin(time * .02) * .5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = avatar.color;
+    ctx.globalAlpha = .55 + Math.sin(time * .02) * .2;
+    ctx.beginPath(); ctx.arc(player.x, player.y, avatar.id === 'bastion' ? 2.5 : 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   function drawEnemy(enemy) {
@@ -202,28 +266,108 @@
     }
   }
 
+  function drawConstructShot(shot, time) {
+    ctx.save();
+    ctx.translate(shot.x, shot.y);
+    ctx.rotate(Math.atan2(shot.vy, shot.vx));
+    ctx.strokeStyle = shot.color;
+    ctx.fillStyle = `${shot.color}bb`;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = shot.color;
+    ctx.shadowBlur = 12;
+
+    if (shot.style === 'lance') {
+      ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-8, -3); ctx.lineTo(-3, 0); ctx.lineTo(-8, 3); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = .65; ctx.beginPath(); ctx.moveTo(-7, 0); ctx.lineTo(-14, 0); ctx.stroke();
+    } else if (shot.style === 'ward') {
+      ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(3, -5); ctx.lineTo(-4, -5); ctx.lineTo(-7, 0); ctx.lineTo(-4, 5); ctx.lineTo(3, 5); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-2, -3); ctx.lineTo(2, 0); ctx.lineTo(-2, 3); ctx.stroke();
+    } else if (shot.style === 'hammer') {
+      ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(2, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(2, -6); ctx.lineTo(8, -4); ctx.lineTo(8, 4); ctx.lineTo(2, 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (shot.style === 'nova') {
+      const rotation = time * .006;
+      ctx.rotate(rotation);
+      ctx.beginPath();
+      for (let i = 0; i < 12; i++) {
+        const angle = i * Math.PI / 6;
+        const radius = i % 2 ? 3 : 7;
+        const x = Math.cos(angle) * radius; const y = Math.sin(angle) * radius;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff2d6'; ctx.beginPath(); ctx.arc(0, 0, 1.5, 0, Math.PI * 2); ctx.fill();
+    } else if (shot.style === 'cage') {
+      ctx.beginPath(); ctx.moveTo(-5, -4); ctx.lineTo(1, -7); ctx.lineTo(7, -4); ctx.lineTo(7, 3); ctx.lineTo(1, 7); ctx.lineTo(-5, 4); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-5, -4); ctx.lineTo(1, 0); ctx.lineTo(7, -4); ctx.moveTo(1, 0); ctx.lineTo(1, 7); ctx.moveTo(-5, 4); ctx.lineTo(1, 0); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(0, -5); ctx.lineTo(-6, -2); ctx.lineTo(-1, 0); ctx.lineTo(-6, 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-8, -5); ctx.lineTo(-2, -2); ctx.moveTo(-8, 5); ctx.lineTo(-2, 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawConstructPulse(effect) {
+    const progress = 1 - effect.life / effect.duration;
+    const radius = effect.radius * (.45 + progress * .65);
+    ctx.save();
+    ctx.translate(effect.x, effect.y);
+    ctx.globalAlpha = Math.max(0, effect.life / effect.duration);
+    ctx.strokeStyle = effect.color;
+    ctx.fillStyle = `${effect.color}18`;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = effect.color;
+    ctx.shadowBlur = 18;
+
+    if (effect.style === 'cage') {
+      ctx.rotate(progress * Math.PI / 4);
+      ctx.strokeRect(-radius * .72, -radius * .72, radius * 1.44, radius * 1.44);
+      ctx.strokeRect(-radius * .5, -radius * .5, radius, radius);
+      ctx.beginPath(); ctx.moveTo(-radius * .72, -radius * .72); ctx.lineTo(-radius * .5, -radius * .5); ctx.moveTo(radius * .72, radius * .72); ctx.lineTo(radius * .5, radius * .5); ctx.stroke();
+    } else if (effect.style === 'hammer') {
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.stroke();
+      for (let i = 0; i < 4; i++) {
+        const angle = progress * .35 + i * Math.PI / 2;
+        ctx.save(); ctx.rotate(angle); ctx.fillRect(radius * .7, -3, radius * .25, 6); ctx.restore();
+      }
+    } else if (effect.style === 'nova') {
+      ctx.beginPath();
+      for (let i = 0; i < 16; i++) {
+        const angle = i * Math.PI / 8;
+        const distance = radius * (i % 2 ? .78 : 1);
+        if (i === 0) ctx.moveTo(Math.cos(angle) * distance, Math.sin(angle) * distance);
+        else ctx.lineTo(Math.cos(angle) * distance, Math.sin(angle) * distance);
+      }
+      ctx.closePath(); ctx.stroke();
+    } else if (effect.style === 'mirror') {
+      for (let i = 0; i < 3; i++) {
+        ctx.save(); ctx.rotate(i * Math.PI / 3 + progress * .2);
+        ctx.beginPath(); ctx.moveTo(0, -radius); ctx.lineTo(radius * .18, 0); ctx.lineTo(0, radius); ctx.lineTo(-radius * .18, 0); ctx.closePath(); ctx.stroke(); ctx.restore();
+      }
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, radius, 0, Math.PI * 2); ctx.stroke();
+      if (effect.style === 'ward') {
+        ctx.beginPath(); ctx.arc(0, 0, radius * .78, -Math.PI * .72, Math.PI * .72); ctx.stroke();
+      } else {
+        for (let i = 0; i < 4; i++) {
+          ctx.save(); ctx.rotate(i * Math.PI / 2); ctx.beginPath(); ctx.moveTo(radius * .72, 0); ctx.lineTo(radius, -3); ctx.lineTo(radius, 3); ctx.closePath(); ctx.fill(); ctx.restore();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
   function draw() {
     const time = performance.now();
     drawBackground(time);
+    for (const effect of constructEffects) drawConstructPulse(effect);
     for (const pickup of pickups) {
       ctx.save(); ctx.translate(pickup.x, pickup.y); ctx.rotate(time * .0015);
       ctx.strokeStyle = lime; ctx.fillStyle = 'rgba(164,255,79,.15)'; ctx.shadowColor = lime; ctx.shadowBlur = 10;
       ctx.beginPath(); ctx.moveTo(0, -7); ctx.lineTo(7, 0); ctx.lineTo(0, 7); ctx.lineTo(-7, 0); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore();
     }
     for (const shot of shots) {
-      ctx.strokeStyle = shot.friendly ? shot.color : 'rgba(255,112,81,.9)';
-      ctx.fillStyle = shot.color;
-      ctx.lineWidth = shot.friendly ? 2 : 1.5; ctx.shadowColor = shot.friendly ? shot.color : '#ff805b'; ctx.shadowBlur = 9;
-      if (shot.style === 'hammer') {
-        ctx.save(); ctx.translate(shot.x, shot.y); ctx.rotate(Math.atan2(shot.vy, shot.vx));
-        ctx.fillRect(-6, -4, 12, 8); ctx.restore();
-      } else if (shot.style === 'cage') {
-        ctx.strokeRect(shot.x - 4, shot.y - 4, 8, 8);
-      } else if (shot.style === 'nova' || shot.style === 'mirror' || shot.style === 'ward') {
-        ctx.beginPath(); ctx.arc(shot.x, shot.y, shot.style === 'nova' ? 3 : 2.5, 0, Math.PI * 2); ctx.fill();
-      } else {
-        ctx.beginPath(); ctx.moveTo(shot.x, shot.y); ctx.lineTo(shot.x - shot.vx * .035, shot.y - shot.vy * .035); ctx.stroke();
-      }
+      drawConstructShot(shot, time);
     }
     ctx.shadowBlur = 0;
     for (const enemy of enemies) drawEnemy(enemy);
@@ -259,8 +403,10 @@
   }
 
   function updateHud() {
-    $('healthBar').style.width = `${Math.max(0, player.health)}%`;
-    $('healthText').textContent = `${Math.max(0, Math.ceil(player.health))}%`;
+    const healthPercent = Math.max(0, player.health / player.maxHealth * 100);
+    $('healthBar').style.width = `${healthPercent}%`;
+    $('healthBar').style.backgroundColor = activeAvatar().color;
+    $('healthText').textContent = `${Math.ceil(healthPercent)}%`;
     $('waveText').textContent = String(wave).padStart(2, '0');
     $('enemyText').textContent = `${String(enemies.length).padStart(2, '0')} HOSTILES`;
     $('scoreText').textContent = String(score).padStart(6, '0');
@@ -278,9 +424,10 @@
 
   function startGame() {
     if (state === 'playing') return;
+    const avatar = activeAvatar();
     state = 'playing'; score = 0; wave = 1; waveKills = 0; waveTarget = 7;
-    lastPersistedScore = 0; enemies = []; shots = []; particles = []; pickups = [];
-    player = { x: width * .5, y: height * .5 + 62, health: 100, speed: 205, shield: 0, shieldCooldown: 0, invulnerable: 0 };
+    lastPersistedScore = 0; enemies = []; shots = []; particles = []; pickups = []; constructEffects = [];
+    player = { x: width * .5, y: height * .5 + 62, health: avatar.health, maxHealth: avatar.health, speed: avatar.speed, fireRate: avatar.fireRate, pulseRadius: avatar.pulseRadius, pulseDuration: avatar.pulseDuration, shield: 0, shieldCooldown: 0, invulnerable: 0 };
     deployments++;
     localStorage.setItem('pd_deployments', String(deployments));
     $('deployments').textContent = String(deployments).padStart(2, '0');
@@ -318,23 +465,26 @@
 
   function shieldPulse() {
     if (!player || player.shieldCooldown > 0) return;
-    player.shield = .55; player.shieldCooldown = 4.5;
-    spawnBurst(player.x, player.y, 'rgba(164,255,79,.9)', 18, 180);
+    const avatar = activeAvatar();
+    const ring = rings[ringIndex];
+    player.shield = avatar.pulseDuration; player.shieldCooldown = 4.5;
+    constructEffects.push({ x: player.x, y: player.y, life: .72, duration: .72, radius: avatar.pulseRadius, style: ring.style, color: ring.color });
+    spawnBurst(player.x, player.y, ring.color, 22, 190);
     for (const enemy of [...enemies]) {
-      if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < 82) {
+      if (Math.hypot(enemy.x - player.x, enemy.y - player.y) < avatar.pulseRadius) {
         enemy.hp--; enemy.flash = .12;
-        if (enemy.hp <= 0) killEnemy(enemy);
+        if (enemy.hp <= 0) killEnemy(enemy, ring.color);
       }
     }
     setMessage('WARD PULSE // HOSTILES DISRUPTED', 950);
   }
 
-  function killEnemy(enemy) {
+  function killEnemy(enemy, impactColor = rings[ringIndex].color) {
     const index = enemies.indexOf(enemy);
     if (index < 0) return;
     enemies.splice(index, 1);
     score += enemy.maxHp === 1 ? 100 : 250; waveKills++;
-    spawnBurst(enemy.x, enemy.y, 'rgba(255,128,91,.9)', 10, 145);
+    spawnBurst(enemy.x, enemy.y, impactColor, 14, 175);
     if (Math.random() < .13) pickups.push({ x: enemy.x, y: enemy.y, life: 9 });
     if (score - lastPersistedScore >= 500) persistRun();
     if (waveKills >= waveTarget) {
@@ -370,7 +520,7 @@
     }
 
     const activeRing = rings[ringIndex];
-    if (pointerDown && performance.now() - lastShot > activeRing.rate) {
+    if (pointerDown && performance.now() - lastShot > activeRing.rate * player.fireRate) {
       lastShot = performance.now();
       const angle = Math.atan2(aim.y - player.y, aim.x - player.x);
       const offsets = activeRing.spread ? [-activeRing.spread, 0, activeRing.spread] : [0];
@@ -409,10 +559,10 @@
         if (Math.hypot(shot.x - enemy.x, shot.y - enemy.y) < enemy.radius + 3) {
           enemy.hp -= shot.damage; enemy.flash = .12;
           if (shot.slow) enemy.slow = shot.slow;
-          spawnBurst(shot.x, shot.y, 'rgba(190,255,134,.9)', 3, 70);
+          spawnBurst(shot.x, shot.y, shot.color, 5, 95);
           if (shot.pierce > 0 && shot.hits < shot.pierce) shot.hits++;
           else shots.splice(i, 1);
-          if (enemy.hp <= 0) killEnemy(enemy);
+          if (enemy.hp <= 0) killEnemy(enemy, shot.color);
           break;
         }
       }
@@ -423,6 +573,10 @@
       particle.x += particle.vx * dt; particle.y += particle.vy * dt;
       particle.vx *= .97; particle.vy *= .97; particle.life -= dt * 1.4;
       if (particle.life <= 0) particles.splice(i, 1);
+    }
+    for (let i = constructEffects.length - 1; i >= 0; i--) {
+      constructEffects[i].life -= dt;
+      if (constructEffects[i].life <= 0) constructEffects.splice(i, 1);
     }
     for (let i = pickups.length - 1; i >= 0; i--) {
       const pickup = pickups[i]; pickup.life -= dt;
@@ -556,5 +710,5 @@
 
   $('refreshLeaderboard').addEventListener('click', loadLeaderboard);
   $('deployments').textContent = String(deployments).padStart(2, '0');
-  resize(); loadLeaderboard(); restoreSession();
+  updateAvatarSelection(); resize(); loadLeaderboard(); restoreSession();
 })();
