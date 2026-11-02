@@ -18,11 +18,7 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('neon.tech') ? { rejectUnauthorized: false } : undefined,
 });
 
-if (isProduction && !hasDatabase) {
-  console.error('DATABASE_URL is required in production. Add your Neon connection string before starting the server.');
-  process.exit(1);
-}
-if (isProduction && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
+if (isProduction && hasDatabase && (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32)) {
   console.error('SESSION_SECRET must be set to a random value of at least 32 characters in production.');
   process.exit(1);
 }
