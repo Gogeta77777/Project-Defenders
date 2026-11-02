@@ -74,6 +74,23 @@
             <div class="pilot-emblem" aria-hidden="true"><span>✳</span><i></i></div>
             <div><h2 id="pilotName">UNASSIGNED</h2><p id="pilotRank">CREATE A CALLSIGN TO ENLIST</p></div>
           </div>
+          <div class="avatar-picker">
+            <div class="avatar-picker-heading"><span>SELECT FRAME</span><span>LOCAL LOADOUT</span></div>
+            <div class="avatar-options" role="group" aria-label="Select a pilot avatar">
+              <button class="avatar-choice is-active" type="button" data-avatar="rook" aria-pressed="true">
+                <svg class="avatar-art avatar-rook" viewBox="0 0 28 28" aria-hidden="true"><path d="M14 2.5c-5.2 0-9 3.8-9 9v5.1L14 24l9-7.4v-5.1c0-5.2-3.8-9-9-9Z"/><path class="avatar-visor" d="M7 11h14l-1.6 4H8.6L7 11Z"/><path class="avatar-core" d="m14 17 2.2 2.2-2.2 2.2-2.2-2.2L14 17Z"/></svg>
+                <span><b>ROOK</b><small>ADAPTIVE</small></span>
+              </button>
+              <button class="avatar-choice" type="button" data-avatar="bastion" aria-pressed="false">
+                <svg class="avatar-art avatar-bastion" viewBox="0 0 28 28" aria-hidden="true"><path d="m14 2 10 5v7c0 5.8-4.1 9.5-10 12C8.1 23.5 4 19.8 4 14V7l10-5Z"/><path class="avatar-visor" d="M7 10h14l-2 4.5h-10L7 10Z"/><path class="avatar-core" d="m14 16 3 3-3 3-3-3 3-3Z"/></svg>
+                <span><b>BASTION</b><small>HEAVY</small></span>
+              </button>
+              <button class="avatar-choice" type="button" data-avatar="wisp" aria-pressed="false">
+                <svg class="avatar-art avatar-wisp" viewBox="0 0 28 28" aria-hidden="true"><path d="m14 2 5 7-2 4 7 9-10-4-10 4 7-9-2-4 5-7Z"/><path class="avatar-visor" d="m9 10 5-3 5 3-2 4h-6l-2-4Z"/><circle class="avatar-core" cx="14" cy="18" r="2"/></svg>
+                <span><b>WISP</b><small>AGILE</small></span>
+              </button>
+            </div>
+          </div>
           <div class="stats-row">
             <div><span>BEST SCORE</span><strong id="bestScore">------</strong></div>
             <div><span>BEST WAVE</span><strong id="bestWave">--</strong></div>
